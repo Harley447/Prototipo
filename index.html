@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Prototipo de Tona Alerta: clima, lluvia, caudal y calidad del agua del río Tona.">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Tona Alerta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
+<style>
+/* Layout: banda de prototipo, cabecera, hero con resumen del día, tarjetas de datos, bloque Premium con candado, planes. Anuncios fijos en las dos esquinas inferiores solo para plan gratuito. */
+:root{
+  --font-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --font-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --bg:#EDF4F2; --surface:#FFFFFF; --surface-2:#E2EDEA; --ink:#0E2927; --ink-2:#47615E; --line:#C7D9D5;
+  --accent:#0A6B7A; --on-accent:#FFFFFF; --accent-soft:#D2EAEE;
+  --ok:#1B7A3D; --ok-bg:#DCF1E2; --warn:#8F5200; --warn-bg:#FAE9C6; --alert:#B3261E; --alert-bg:#FBDAD6;
+  --scrim:rgba(6,22,22,.55);
+  --shadow:0 1px 2px rgba(14,41,39,.08),0 8px 24px rgba(14,41,39,.07);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1819; --surface:#112528; --surface-2:#173034; --ink:#E3F1EF; --ink-2:#9DB8B4; --line:#264548;
+  --accent:#5CC4D3; --on-accent:#06242A; --accent-soft:#12383F;
+  --ok:#6FD596; --ok-bg:#12301F; --warn:#F2B84B; --warn-bg:#3A2C0E; --alert:#FF9C8F; --alert-bg:#3B1814;
+  --scrim:rgba(0,8,8,.7);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1819; --surface:#112528; --surface-2:#173034; --ink:#E3F1EF; --ink-2:#9DB8B4; --line:#264548;
+  --accent:#5CC4D3; --on-accent:#06242A; --accent-soft:#12383F;
+  --ok:#6FD596; --ok-bg:#12301F; --warn:#F2B84B; --warn-bg:#3A2C0E; --alert:#FF9C8F; --alert-bg:#3B1814;
+  --scrim:rgba(0,8,8,.7);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 17px/1.5 var(--font-body);-webkit-text-size-adjust:100%}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.12;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.inner{max-width:1160px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.8rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:46px;padding:.6rem 1.2rem;border-radius:10px;border:1.5px solid transparent;font-weight:700;cursor:pointer;text-align:center;line-height:1.2}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-sm{min-height:38px;padding:.35rem .9rem;font-size:.95rem}
+.btn.wide{width:100%}
+.link{background:none;border:0;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer}
+
+/* prototype band */
+.demo{background:var(--ink);color:var(--bg);font-size:.85rem}
+.demo .inner{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .9rem;padding-block:.55rem}
+.demo b{letter-spacing:.08em;text-transform:uppercase;font-size:.75rem}
+.demo .opts{display:flex;flex-wrap:wrap;gap:.35rem}
+.demo button{background:transparent;border:1px solid var(--ink-2);color:var(--bg);padding:.2rem .7rem;border-radius:999px;cursor:pointer;font-size:.85rem}
+.demo button[aria-pressed="true"]{background:var(--bg);color:var(--ink);border-color:var(--bg);font-weight:700}
+
+/* header */
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top .inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-block:.8rem}
+.brand{display:flex;align-items:center;gap:.65rem;min-width:0}
+.brand svg{width:36px;height:36px;flex:none}
+.brand strong{font:700 1.3rem/1 var(--font-display);letter-spacing:-.02em}
+.brand small{display:block;color:var(--ink-2);font-size:.82rem;margin-top:.15rem}
+.acct{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .7rem;border-radius:999px;font-weight:700;font-size:.9rem;white-space:nowrap;background:var(--surface-2);color:var(--ink)}
+.pill::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.alert{background:var(--alert-bg);color:var(--alert)}
+.pill.info{background:var(--accent-soft);color:var(--accent)}
+.pill.plain::before{display:none}
+.pill.sm{font-size:.8rem;padding:.1rem .55rem}
+.pill.prem{background:var(--ink);color:var(--bg)}
+.pill.prem::before{display:none}
+
+/* banner */
+.banner{background:var(--accent-soft);border-bottom:1px solid var(--line)}
+.banner.expired{background:var(--warn-bg)}
+.banner .inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.7rem 1.2rem;padding-block:.85rem}
+.banner p{max-width:62ch}
+.banner .acts{display:flex;flex-wrap:wrap;gap:.5rem}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:2rem 3rem;align-items:start;padding-block:2.6rem 1.2rem}
+.hero h1{font-size:clamp(2.2rem,5.2vw,3.5rem);font-weight:700;letter-spacing:-.03em;margin-top:.6rem}
+.hero .lead{font-size:1.15rem;color:var(--ink-2);margin-top:1rem;max-width:46ch}
+.hero .cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.5rem}
+.summary{border-radius:14px;padding:1.3rem;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow)}
+.summary.ok{background:var(--ok-bg)} .summary.warn{background:var(--warn-bg)} .summary.alert{background:var(--alert-bg)}
+.summary .head{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.summary h2{font-size:1.9rem;margin-top:.35rem}
+.summary.ok h2{color:var(--ok)} .summary.warn h2{color:var(--warn)} .summary.alert h2{color:var(--alert)}
+.summary .sent{margin-top:.6rem;font-size:1.08rem}
+.summary ul{list-style:none;margin:1rem 0 0;padding:0;display:grid;gap:.5rem}
+.summary li{display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.55rem .8rem;border-radius:10px;background:var(--surface)}
+.summary li span:first-child{font-weight:700}
+
+/* station tabs */
+.sectionbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:.8rem 1.5rem;padding-block:1.6rem .9rem}
+.sectionbar h2{font-size:1.6rem}
+.sectionbar .meta{color:var(--ink-2);font-size:.95rem;margin-top:.25rem}
+.tabs{display:flex;flex-wrap:wrap;gap:.4rem}
+.tabs button{min-height:44px;padding:.4rem 1rem;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700}
+.tabs button[aria-selected="true"],.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+
+/* data cards */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.3rem;min-width:0}
+.card.span{grid-column:1/-1}
+.card .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;flex-wrap:wrap}
+.card h3{font-size:1.15rem}
+.big{font:700 3.2rem/1 var(--font-display);letter-spacing:-.03em;margin-top:.9rem;font-variant-numeric:tabular-nums}
+.big small{font:700 1.1rem var(--font-body);color:var(--ink-2);letter-spacing:0;margin-left:.25rem}
+.sub{color:var(--ink-2);margin-top:.35rem;font-size:.97rem}
+.plain-say{margin-top:.8rem;padding:.65rem .85rem;border-radius:10px;background:var(--surface-2);font-size:1rem}
+.chart{width:100%;height:auto;display:block;margin-top:1rem}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .axis{fill:var(--ink-2);font:11px var(--font-body)}
+.chart .val{fill:var(--ink);font:700 11.5px var(--font-body)}
+.chart .bar{fill:var(--accent);opacity:.5}
+.chart .bar.now{opacity:1}
+.chart .area{fill:var(--accent-soft)}
+.chart .line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .band{fill:var(--ok-bg)}
+.chart .dot{fill:var(--accent);stroke:var(--surface);stroke-width:2.5}
+.legend{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-size:.85rem;color:var(--ink-2);margin-top:.4rem}
+.legend i{display:inline-block;width:.9rem;height:.6rem;border-radius:2px;margin-right:.35rem;vertical-align:baseline}
+.facts{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;margin-top:.7rem;color:var(--ink-2);font-size:.97rem}
+.facts b{color:var(--ink)}
+
+/* river gauge */
+.gauge{margin-top:1.2rem}
+.gtrack{position:relative;height:2.1rem;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;
+  background-image:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 10%)}
+.gband{position:absolute;top:0;bottom:0;background:var(--ok-bg);border-inline:2px solid var(--ok)}
+.gmark{position:absolute;top:-1px;bottom:-1px;width:5px;margin-left:-2.5px;background:var(--ink);border-radius:2px}
+.gscale{position:relative;height:1.5rem;margin-top:.3rem;font-size:.85rem;color:var(--ink-2)}
+.gscale span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.gscale span.l{transform:none;left:0}
+
+/* water quality */
+.metals{list-style:none;margin:1.1rem 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem 2rem}
+.metal{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.15rem .8rem;align-items:center}
+.m-name{display:flex;align-items:baseline;gap:.5rem}
+.m-name strong{font-size:1.05rem}
+.sym{font:700 .85rem var(--font-display);color:var(--ink-2);border:1px solid var(--line);border-radius:5px;padding:0 .35rem}
+.m-val{font:700 1.5rem/1.1 var(--font-display);font-variant-numeric:tabular-nums}
+.m-val small{font:400 .85rem var(--font-body);color:var(--ink-2)}
+.m-bar{grid-column:1/-1;position:relative;height:.7rem;border-radius:99px;background:var(--surface-2);margin-top:.4rem;overflow:visible}
+.m-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--ok)}
+.m-bar.warn i{background:var(--warn)} .m-bar.alert i{background:var(--alert)}
+.m-bar b{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.m-lim{grid-column:1/-1;font-size:.85rem;color:var(--ink-2)}
+.note{font-size:.88rem;color:var(--ink-2);margin-top:1.1rem}
+
+/* premium */
+.prem-head{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center}
+.prem-head h2{font-size:1.6rem}
+.locked-wrap{position:relative;margin-top:1rem}
+.blurred{filter:blur(7px);opacity:.6;user-select:none;pointer-events:none}
+.lock{position:absolute;inset:0;display:flex;justify-content:center;align-items:flex-start;padding:1.5rem 1rem}
+.lockcard{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:1.5rem;max-width:30rem;width:100%;box-shadow:var(--shadow)}
+.lockcard svg{width:2rem;height:2rem;color:var(--accent)}
+.lockcard h3{font-size:1.4rem;margin-top:.5rem}
+.lockcard p{margin-top:.5rem;color:var(--ink-2)}
+.lockcard .cta{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem}
+.lockcard .fine{font-size:.88rem}
+.pblock{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.3rem;margin-top:1.1rem}
+.pblock>h3{font-size:1.2rem}
+.pblock>.sub{margin-bottom:.8rem}
+.frows{display:grid;gap:.3rem}
+.fhead,.frow{display:grid;grid-template-columns:4.5rem 2.2rem 6.5rem minmax(0,1fr) 12.5rem;gap:.8rem;align-items:center}
+.fhead{font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);padding:0 .6rem .3rem}
+.frow{padding:.55rem .6rem;border-radius:10px;background:var(--surface-2)}
+.fday{display:flex;gap:.4rem;align-items:baseline}
+.fday strong{font-family:var(--font-display)}
+.fday span{color:var(--ink-2)}
+.glyph{width:2rem;height:2rem;color:var(--accent)}
+.ftemp{font-weight:700;font-variant-numeric:tabular-nums}
+.ftemp span{color:var(--ink-2);font-weight:400}
+.frain{display:flex;align-items:center;gap:.7rem;min-width:0}
+.frain>span{font-size:.92rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.meter{flex:1;min-width:3rem;height:.6rem;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.fflow{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-variant-numeric:tabular-nums}
+.tips{list-style:none;margin:0;padding:0;display:grid;gap:.7rem}
+.tip{display:grid;grid-template-columns:7rem minmax(0,1fr);gap:.4rem 1rem;align-items:start;padding:.9rem 1rem;border-radius:12px;background:var(--surface-2)}
+.tip h4{font-size:1.05rem}
+.tip p{margin-top:.2rem}
+
+/* entidades: captación y alertas */
+.callout{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;align-items:center;justify-content:space-between;padding:1rem 1.1rem;border-radius:12px;margin-bottom:1rem}
+.callout.ok{background:var(--ok-bg)}.callout.warn{background:var(--warn-bg)}.callout.alert{background:var(--alert-bg)}
+.callout h4{font-size:1.3rem}
+.callout.ok h4{color:var(--ok)}.callout.warn h4{color:var(--warn)}.callout.alert h4{color:var(--alert)}
+.callout p{margin-top:.25rem;max-width:52ch}
+.callout .m{font:700 2.2rem/1 var(--font-display);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.callout .m small{font:700 1rem var(--font-body);color:var(--ink-2);margin-left:.3rem;letter-spacing:0}
+.chead,.crow{display:grid;grid-template-columns:4.5rem repeat(3,minmax(0,1fr)) 11.5rem;gap:.8rem;align-items:center}
+.chead{font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);padding:0 .6rem .3rem}
+.crow{padding:.55rem .6rem;border-radius:10px;background:var(--surface-2);font-variant-numeric:tabular-nums}
+.crow .c small{display:none;color:var(--ink-2);font-size:.8rem}
+.cst{display:flex;justify-content:flex-end}
+.report{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem}
+.report ul{margin:.6rem 0 0;padding-left:1.2rem}
+.rolebar{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .8rem;margin-top:1rem}
+.rolebar>span{font-weight:700;font-size:.95rem}
+@media (min-width:901px){.plans.three{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem;margin-top:1.1rem}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;min-width:0}
+.plan.feat{border:2px solid var(--accent);background:var(--accent-soft)}
+.plan h3{font-size:1.4rem}
+.price{font:700 2.4rem/1 var(--font-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.price small{font:400 1rem var(--font-body);color:var(--ink-2);letter-spacing:0}
+.plan ul{list-style:none;margin:0;padding:0;display:grid;gap:.55rem;flex:1}
+.plan li{display:grid;grid-template-columns:1.3rem minmax(0,1fr);gap:.55rem;align-items:start}
+.plan li svg{width:1.3rem;height:1.3rem;color:var(--ok);margin-top:.1rem}
+.plan li.off svg{color:var(--ink-2)}
+.plan .fine{font-size:.88rem;color:var(--ink-2)}
+
+footer{margin-top:2.5rem;border-top:1px solid var(--line);background:var(--surface)}
+footer .inner{padding-block:1.6rem;display:grid;gap:.5rem;color:var(--ink-2);font-size:.92rem}
+footer strong{color:var(--ink)}
+body.has-ads footer .inner{padding-bottom:6.5rem}
+
+/* ads */
+.ad{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(230px,calc(50vw - 20px));background:var(--surface);border:1px dashed var(--ink-2);border-radius:10px;padding:.5rem .65rem;box-shadow:var(--shadow);z-index:20;font-size:.8rem;line-height:1.3}
+.ad-l{left:calc(12px + env(safe-area-inset-left,0px))}
+.ad-r{right:calc(12px + env(safe-area-inset-right,0px))}
+.ad .tag{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);font-weight:700}
+.ad .body{display:flex;gap:.5rem;align-items:center;margin-top:.2rem}
+.ad .body svg{width:1.9rem;height:1.9rem;flex:none;color:var(--ok)}
+.ad strong{display:block;font-size:.9rem}
+.ad .body span{color:var(--ink-2)}
+.ad .link{font-size:.78rem;margin-top:.3rem;display:inline-block}
+@media (max-width:520px){.ad .body svg{display:none}.ad strong{font-size:.82rem}}
+
+/* modal + toast */
+.overlay{position:fixed;inset:0;background:var(--scrim);z-index:50;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal{position:relative;background:var(--surface);border-radius:16px;padding:1.6rem;width:100%;max-width:27rem;max-height:100%;overflow-y:auto;box-shadow:var(--shadow)}
+.modal h2{font-size:1.5rem;padding-right:2rem}
+.modal .x{position:absolute;top:.6rem;right:.6rem;width:40px;height:40px;border-radius:50%;border:0;background:var(--surface-2);cursor:pointer;font-size:1.4rem;line-height:1}
+.modal form{display:grid;gap:.9rem;margin-top:1.1rem}
+.field{display:grid;gap:.3rem}
+.field label{font-weight:700;font-size:.95rem}
+.field input,.field select{min-height:46px;padding:.5rem .8rem;border-radius:10px;border:1.5px solid var(--line);background:var(--bg)}
+.check{display:grid;grid-template-columns:1.4rem minmax(0,1fr);gap:.7rem;padding:.8rem;border-radius:12px;background:var(--accent-soft);cursor:pointer}
+.check input{width:1.3rem;height:1.3rem;margin-top:.2rem;accent-color:var(--accent)}
+.check small{color:var(--ink-2)}
+.err{color:var(--alert);background:var(--alert-bg);padding:.55rem .8rem;border-radius:10px;font-weight:700}
+.switch{text-align:center;font-size:.95rem}
+.proto{font-size:.82rem;color:var(--ink-2);text-align:center}
+.methods{display:grid;gap:.5rem;margin-top:1rem}
+.methods label{display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;font-weight:700}
+.methods input{accent-color:var(--accent);width:1.2rem;height:1.2rem}
+.sumrow{display:flex;justify-content:space-between;gap:1rem;padding:.8rem 0;border-bottom:1px solid var(--line);margin-top:1rem}
+.toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);background:var(--ink);color:var(--bg);padding:.7rem 1.1rem;border-radius:12px;box-shadow:var(--shadow);z-index:60;font-weight:700;text-align:center}
+
+/* responsive */
+@media (max-width:900px){
+  .hero{grid-template-columns:minmax(0,1fr);padding-top:1.8rem}
+  .grid,.plans,.metals{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .fhead{display:none}
+  .frow{grid-template-columns:4rem 2rem minmax(0,1fr);grid-template-areas:"day glyph temp" "rain rain rain" "flow flow flow"}
+  .fday{grid-area:day}.glyph{grid-area:glyph}.ftemp{grid-area:temp}.frain{grid-area:rain}.fflow{grid-area:flow}
+  .tip{grid-template-columns:minmax(0,1fr)}
+  .tip .pill{justify-self:start}
+  .brand small{display:none}
+  .big{font-size:2.8rem}
+  .chead{display:none}
+  .crow{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"day day st" "q e m"}
+  .crow .cday{grid-area:day}.crow .cq{grid-area:q}.crow .ce{grid-area:e}.crow .cm{grid-area:m}.crow .cst{grid-area:st}
+  .crow .c small{display:block}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="g-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="g-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.2a4 4 0 0 0 .6-7.95A5.6 5.6 0 0 0 7.1 9.6 4.5 4.5 0 0 0 7 18.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="g-rain" viewBox="0 0 24 24"><path d="M7 15h10.2a3.6 3.6 0 0 0 .5-7.15A5.2 5.2 0 0 0 7.2 7.2 4 4 0 0 0 7 15z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 18l-1 3M12.5 18l-1 3M16.5 18l-1 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="g-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="g-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="g-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="g-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14M5 19c2-4 5-7 9-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="g-drop" viewBox="0 0 24 24"><path d="M12 3.5c3.5 4.2 6 7 6 10.3a6 6 0 0 1-12 0c0-3.3 2.5-6.1 6-10.3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="demo">
+  <div class="inner">
+    <b>Modo prototipo</b>
+    <span>Simula la cuenta:</span>
+    <div class="opts" id="demo-opts">
+      <button type="button" data-action="set-plan" data-plan="visitor">Visitante</button>
+      <button type="button" data-action="set-plan" data-plan="free">Gratis</button>
+      <button type="button" data-action="set-plan" data-plan="trial">Prueba Premium</button>
+      <button type="button" data-action="set-plan" data-plan="expired">Prueba vencida</button>
+      <button type="button" data-action="set-plan" data-plan="premium">Premium</button>
+    </div>
+    <span>Tipo de usuario:</span>
+    <div class="opts" id="demo-role">
+      <button type="button" data-action="set-role" data-role="agri">Agricultor</button>
+      <button type="button" data-action="set-role" data-role="entidad">Entidad o empresa</button>
+    </div>
+  </div>
+</div>
+
+<header class="top">
+  <div class="inner">
+    <div class="brand">
+      <svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="10" style="fill:var(--accent)"/><path d="M7 15c3-3.2 5.5-3.2 8.5 0s5.5 3.2 8.5 0c1.6-1.6 3-2.3 5-2.3M7 22c3-3.2 5.5-3.2 8.5 0s5.5 3.2 8.5 0c1.6-1.6 3-2.3 5-2.3" fill="none" style="stroke:var(--on-accent)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <div><strong>Tona Alerta</strong><small>El río Tona, claro y a tiempo</small></div>
+    </div>
+    <div class="acct" id="acct"></div>
+  </div>
+</header>
+
+<div class="banner" id="banner" hidden></div>
+
+<main>
+  <section class="inner hero" id="hero">
+    <div>
+      <div class="eyebrow" id="hero-eyebrow">Cuenca del río Tona · Santander</div>
+      <h1>El río Tona, claro y a tiempo</h1>
+      <p class="lead" id="hero-lead">Clima, lluvia, caudal y calidad del agua de la cuenca, explicados en palabras sencillas.</p>
+      <div class="cta" id="hero-cta"></div>
+    </div>
+    <div id="summary"></div>
+  </section>
+
+  <section class="inner" id="datos" aria-labelledby="datos-h">
+    <div class="sectionbar">
+      <div>
+        <h2 id="datos-h">Datos de hoy</h2>
+        <p class="meta" id="datos-meta"></p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Zona del río" id="tabs"></div>
+    </div>
+    <div class="grid" id="cards"></div>
+  </section>
+
+  <section class="inner" id="premium" aria-labelledby="prem-h" style="padding-top:2.8rem">
+    <div class="prem-head">
+      <span class="pill prem" id="prem-pill">Premium</span>
+      <h2 id="prem-h">Lo que viene en los próximos 7 días</h2>
+    </div>
+    <p class="sub" id="prem-sub" style="max-width:60ch">Predicción de clima, lluvia y caudal, con consejos para decidir cuándo cosechar y regar.</p>
+    <div class="rolebar" id="rolebar" hidden>
+      <span>Ver ejemplo para:</span>
+      <div class="tabs">
+        <button type="button" data-action="set-role" data-role="agri" aria-pressed="true">Agricultores</button>
+        <button type="button" data-action="set-role" data-role="entidad" aria-pressed="false">Entidades y empresas</button>
+      </div>
+    </div>
+    <div class="locked-wrap">
+      <div id="prem-content"></div>
+      <div class="lock" id="prem-lock" hidden></div>
+    </div>
+  </section>
+
+  <section class="inner" id="planes" aria-labelledby="planes-h" style="padding-top:2.8rem">
+    <h2 id="planes-h" style="font-size:1.6rem">Planes</h2>
+    <p class="sub">Empieza gratis. Prueba Premium 30 días sin pagar.</p>
+    <div class="plans" id="plans"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="inner">
+    <p><strong>Tona Alerta</strong> · Prototipo del Grupo La Ganga, Modelos de Negocio Digitales.</p>
+    <p>Todos los datos de esta página son de ejemplo. No se guarda ninguna cuenta ni se cobra ningún pago.</p>
+    <p>Las entidades y empresas, como el AMB, tienen un plan a la medida con captación segura, alertas de caudal y calidad del agua, e informes especializados.</p>
+  </div>
+</footer>
+
+<aside class="ad ad-l" id="ad-l" aria-label="Publicidad" hidden>
+  <div class="tag">Publicidad</div>
+  <div class="body"><svg aria-hidden="true"><use href="#g-leaf"/></svg><div><strong>Semillas y abonos</strong><span>Anuncio de ejemplo</span></div></div>
+  <button type="button" class="link" data-action="upgrade">Quitar anuncios</button>
+</aside>
+<aside class="ad ad-r" id="ad-r" aria-label="Publicidad" hidden>
+  <div class="tag">Publicidad</div>
+  <div class="body"><svg aria-hidden="true"><use href="#g-drop"/></svg><div><strong>Mangueras y riego</strong><span>Anuncio de ejemplo</span></div></div>
+  <button type="button" class="link" data-action="upgrade">Quitar anuncios</button>
+</aside>
+
+<div class="overlay" id="auth" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <button type="button" class="x" data-action="close" aria-label="Cerrar">&times;</button>
+    <h2 id="auth-title"></h2>
+    <p class="sub" id="auth-sub"></p>
+    <form id="auth-form" novalidate>
+      <div class="field" data-signup><label for="f-name">Tu nombre</label><input id="f-name" autocomplete="name"></div>
+      <div class="field"><label for="f-user">Correo o celular</label><input id="f-user" autocomplete="username"></div>
+      <div class="field"><label for="f-pass">Contraseña</label><input id="f-pass" type="password" autocomplete="current-password"></div>
+      <div class="field" data-signup><label for="f-place">Vereda o municipio</label><input id="f-place" placeholder="Por ejemplo, Tona"></div>
+      <div class="field" data-signup><label for="f-role">Soy</label>
+        <select id="f-role"><option value="agri">Agricultor o agricultora</option><option value="entidad">Entidad o empresa</option></select></div>
+      <label class="check" for="f-trial" data-signup>
+        <input type="checkbox" id="f-trial" checked>
+        <span><strong id="f-trial-strong">Quiero 30 días de Premium gratis</strong><br><small id="f-trial-small">Predicciones de clima y lluvia, consejos de cosecha y sin anuncios. Después cuesta $8.000 al mes.</small></span>
+      </label>
+      <p class="err" id="auth-err" role="alert" hidden></p>
+      <button class="btn btn-primary wide" id="auth-submit" type="submit"></button>
+      <p class="switch"><span id="auth-switch-text"></span> <button type="button" class="link" data-action="switch-auth" id="auth-switch"></button></p>
+      <p class="proto">Prototipo: lo que escribas aquí no se guarda.</p>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="pay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+    <button type="button" class="x" data-action="close" aria-label="Cerrar">&times;</button>
+    <h2 id="pay-title">Continuar con Premium</h2>
+    <p class="sub">Predicciones a 7 días, consejos de cosecha y sin anuncios.</p>
+    <div class="sumrow"><span>Premium mensual</span><strong class="num">$8.000 COP</strong></div>
+    <fieldset style="border:0;padding:0;margin:0">
+      <legend class="eyebrow" style="margin-top:1rem">Forma de pago</legend>
+      <div class="methods">
+        <label for="m1"><input type="radio" name="method" id="m1" checked> Nequi</label>
+        <label for="m2"><input type="radio" name="method" id="m2"> PSE</label>
+        <label for="m3"><input type="radio" name="method" id="m3"> Tarjeta débito o crédito</label>
+      </div>
+    </fieldset>
+    <button type="button" class="btn btn-primary wide" style="margin-top:1.2rem" data-action="confirm-pay">Confirmar pago de $8.000</button>
+    <p class="proto" style="margin-top:.8rem">Prototipo: no se hace ningún cobro real.</p>
+  </div>
+</div>
+
+<div class="overlay" id="contact" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+    <button type="button" class="x" data-action="close" aria-label="Cerrar">&times;</button>
+    <h2 id="contact-title">Plan para entidades y empresas</h2>
+    <p class="sub">Cuéntanos qué necesita tu organización y te presentamos una propuesta a la medida.</p>
+    <form id="contact-form" novalidate>
+      <div class="field"><label for="c-org">Organización</label><input id="c-org" autocomplete="organization" placeholder="Nombre de la entidad o empresa"></div>
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="eyebrow">Qué necesitan</legend>
+        <div class="methods">
+          <label for="c1"><input type="checkbox" id="c1" checked> Captación posible sin afectar el río</label>
+          <label for="c2"><input type="checkbox" id="c2" checked> Alertas de caudal y calidad del agua</label>
+          <label for="c3"><input type="checkbox" id="c3"> Informes especializados y análisis de datos</label>
+        </div>
+      </fieldset>
+      <p class="err" id="contact-err" role="alert" hidden></p>
+      <button class="btn btn-primary wide" type="submit">Solicitar propuesta</button>
+      <p class="proto">Prototipo: la solicitud no se envía.</p>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var DAYS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+var today=new Date();
+function nf(n,d){return n.toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function $(s){return document.querySelector(s);}
+function dayInfo(off){var d=new Date(today);d.setDate(d.getDate()+off);return {wd:DAYS[d.getDay()],n:d.getDate(),label:DAYS[d.getDay()]+' '+d.getDate()};}
+function nice(v){var p=Math.pow(10,Math.floor(Math.log10(v)));var n=v/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
+
+var LIMITS={Hg:{name:'Mercurio',limit:0.001},Pb:{name:'Plomo',limit:0.01},Cd:{name:'Cadmio',limit:0.003},As:{name:'Arsénico',limit:0.01}};
+function F(tmin,tmax,prob,mm,flow,sky){return {tmin:tmin,tmax:tmax,prob:prob,mm:mm,flow:flow,sky:sky};}
+var STATIONS={
+  alta:{name:'Parte alta',desc:'Zona de páramo, donde nace el río',temp:11.8,tmin:6,tmax:14,hum:92,
+    rain7:[3.2,0,8.5,14,4.2,1,6.4],flow:0.9,range:[0.6,1.6],eco:0.5,flow7:[0.8,0.8,0.9,1.3,1.1,1,0.9],
+    metals:{Hg:0.0001,Pb:0.0012,Cd:0.0003,As:0.0008},
+    forecast:[F(6,15,35,2,0.9,'cloud'),F(5,14,55,5,1,'cloud'),F(5,13,75,12,1.2,'rain'),F(5,12,90,24,1.9,'rain'),F(5,13,60,8,1.4,'rain'),F(3,15,25,1,1.1,'cloud'),F(4,17,15,0,1,'sun')]},
+  media:{name:'Parte media',desc:'Tramo intermedio de la cuenca',temp:17.4,tmin:13,tmax:23,hum:78,
+    rain7:[0,0,6.2,13.5,2,0.4,11.4],flow:2.1,range:[1.2,3],eco:1,flow7:[1.7,1.6,1.8,2.4,2.2,1.9,2.1],
+    metals:{Hg:0.0004,Pb:0.003,Cd:0.0009,As:0.0021},
+    forecast:[F(14,23,15,0,1.9,'sun'),F(14,22,25,1,1.9,'cloud'),F(13,20,60,6,2.1,'rain'),F(13,19,85,22,3.2,'rain'),F(12,19,70,14,3.4,'rain'),F(13,21,30,2,2.6,'cloud'),F(14,23,10,0,2.2,'sun')]},
+  boca:{name:'Bocatoma',desc:'Donde se toma el agua para la ciudad',temp:22.6,tmin:17,tmax:27,hum:66,
+    rain7:[0,0,0,1.2,0,0,0.4],flow:1.3,range:[1.5,3.2],eco:1.2,flow7:[1.9,1.8,1.7,1.6,1.5,1.4,1.3],
+    metals:{Hg:0.0007,Pb:0.004,Cd:0.001,As:0.003},
+    forecast:[F(16,26,10,0,1.3,'sun'),F(16,27,10,0,1.2,'sun'),F(17,27,20,0.5,1.2,'sun'),F(16,25,45,3,1.4,'cloud'),F(16,24,65,9,1.9,'rain'),F(16,24,70,14,2.4,'rain'),F(15,25,40,4,2.3,'cloud')]}
+};
+
+var state={plan:'visitor',daysLeft:30,name:'',trialUsed:false,station:'media',role:'agri'};
+var authMode='signup', lastFocus=null, toastTimer=null;
+
+/* ---------- reglas de estado ---------- */
+function flowStatus(v,r){
+  if(v<r[0]*0.7)return {lvl:2,cls:'alert',txt:'Muy bajo',phrase:'el caudal está muy bajo',plain:'El río lleva mucha menos agua de lo normal.'};
+  if(v<r[0])return {lvl:1,cls:'warn',txt:'Bajo',phrase:'el caudal está bajo',plain:'El río lleva menos agua de lo normal. Cuida el riego.'};
+  if(v>r[1]*1.5)return {lvl:2,cls:'alert',txt:'Muy alto',phrase:'el caudal está muy alto',plain:'El río lleva mucha más agua de lo normal. Aléjate de la orilla.'};
+  if(v>r[1])return {lvl:1,cls:'warn',txt:'Alto',phrase:'el caudal está alto',plain:'El río lleva más agua de lo normal. Ten cuidado cerca de la orilla.'};
+  return {lvl:0,cls:'ok',txt:'Normal',phrase:'el caudal es normal',plain:'El río lleva la cantidad de agua habitual para esta época.'};
+}
+function rainStatus(mm){
+  if(mm<1)return {lvl:0,cls:'ok',txt:'Sin lluvia',phrase:'no hay lluvia',plain:'Hoy casi no ha llovido.'};
+  if(mm<5)return {lvl:0,cls:'ok',txt:'Poca lluvia',phrase:'hay poca lluvia',plain:'Ha caído una lluvia suave. No debería afectar el trabajo.'};
+  if(mm<20)return {lvl:0,cls:'info',txt:'Lluvia moderada',phrase:'hay lluvia moderada',plain:'Ha llovido de forma moderada. El suelo está húmedo.'};
+  if(mm<40)return {lvl:1,cls:'warn',txt:'Lluvia fuerte',phrase:'hay lluvia fuerte',plain:'Ha llovido fuerte. Puede subir el río.'};
+  return {lvl:2,cls:'alert',txt:'Lluvia muy fuerte',phrase:'hay lluvia muy fuerte',plain:'Ha llovido muy fuerte. El río puede crecer rápido.'};
+}
+function metalStatus(k,v){
+  var ratio=v/LIMITS[k].limit;
+  if(ratio<=0.6)return {lvl:0,cls:'ok',txt:'Bueno',ratio:ratio};
+  if(ratio<=1)return {lvl:1,cls:'warn',txt:'Atención',ratio:ratio};
+  return {lvl:2,cls:'alert',txt:'Supera el límite',ratio:ratio};
+}
+function waterStatus(s){
+  var worst=null,wk=null;
+  Object.keys(LIMITS).forEach(function(k){var m=metalStatus(k,s.metals[k]);if(!worst||m.ratio>worst.ratio){worst=m;wk=k;}});
+  var nm=LIMITS[wk].name.toLowerCase();
+  if(worst.lvl===0)return {lvl:0,cls:'ok',txt:'Buena',phrase:'el agua está en buen estado',key:wk,name:nm};
+  if(worst.lvl===1)return {lvl:1,cls:'warn',txt:'Atención',phrase:'el '+nm+' está cerca del límite',key:wk,name:nm};
+  return {lvl:2,cls:'alert',txt:'Alerta',phrase:'el '+nm+' supera el límite',key:wk,name:nm};
+}
+function tempPlain(t){return t<12?'Hace frío. Lleva abrigo.':(t<=22?'Clima templado.':'Hace calor. Toma agua y cuida el sol.');}
+
+/* ---------- gráficos ---------- */
+function rainChart(vals){
+  var W=360,H=150,L=32,R=10,T=14,B=24,pw=W-L-R,ph=H-T-B;
+  var max=nice(Math.max.apply(null,vals.concat([5])));
+  function y(v){return T+ph-(v/max)*ph;}
+  var bw=pw/vals.length,s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Lluvia de los últimos 7 días en milímetros">';
+  [0,max/2,max].forEach(function(t){s+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(t)+'" y2="'+y(t)+'"/><text class="axis" x="'+(L-6)+'" y="'+(y(t)+4)+'" text-anchor="end">'+nf(t,t%1?1:0)+'</text>';});
+  vals.forEach(function(v,i){
+    var x=L+i*bw+bw*0.2,w=bw*0.6,h=v>0?Math.max(2,(v/max)*ph):0,top=T+ph-h,last=i===vals.length-1;
+    s+='<rect class="bar'+(last?' now':'')+'" x="'+x+'" y="'+top+'" width="'+w+'" height="'+h+'" rx="2"/>';
+    if(last)s+='<text class="val" x="'+(x+w/2)+'" y="'+Math.max(10,top-4)+'" text-anchor="middle">'+nf(v,1)+'</text>';
+    s+='<text class="axis" x="'+(x+w/2)+'" y="'+(H-7)+'" text-anchor="middle">'+(last?'Hoy':dayInfo(i-6).wd)+'</text>';
+  });
+  return s+'</svg>';
+}
+function flowChart(vals,r){
+  var W=360,H=150,L=32,R=14,T=14,B=24,pw=W-L-R,ph=H-T-B;
+  var max=nice(Math.max(Math.max.apply(null,vals),r[1])*1.1);
+  function y(v){return T+ph-(v/max)*ph;}
+  function x(i){return L+i*(pw/(vals.length-1));}
+  var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Caudal de los últimos 7 días en metros cúbicos por segundo">';
+  [0,max/2,max].forEach(function(t){s+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(t)+'" y2="'+y(t)+'"/><text class="axis" x="'+(L-6)+'" y="'+(y(t)+4)+'" text-anchor="end">'+nf(t,t%1?1:0)+'</text>';});
+  s+='<rect class="band" x="'+L+'" y="'+y(r[1])+'" width="'+pw+'" height="'+(y(r[0])-y(r[1]))+'"/>';
+  var pts=vals.map(function(v,i){return x(i)+','+y(v);});
+  s+='<path class="area" d="M'+x(0)+','+y(0)+' L'+pts.join(' L')+' L'+x(vals.length-1)+','+y(0)+' Z" opacity=".7"/>';
+  s+='<path class="line" d="M'+pts.join(' L')+'"/>';
+  var li=vals.length-1;
+  s+='<circle class="dot" cx="'+x(li)+'" cy="'+y(vals[li])+'" r="5"/>';
+  vals.forEach(function(v,i){s+='<text class="axis" x="'+x(i)+'" y="'+(H-7)+'" text-anchor="middle">'+(i===li?'Hoy':dayInfo(i-6).wd)+'</text>';});
+  return s+'</svg>';
+}
+
+/* ---------- bloques de contenido ---------- */
+function cardsHTML(s){
+  var fl=flowStatus(s.flow,s.range), rn=rainStatus(s.rain7[6]), wt=waterStatus(s);
+  var total=s.rain7.reduce(function(a,b){return a+b;},0);
+  var G=s.range[1]*1.5, pos=function(v){return Math.max(1,Math.min(99,v/G*100));};
+  var out='';
+  out+='<article class="card"><div class="ch"><h3>Temperatura</h3><span class="pill info">'+(s.temp<12?'Frío':(s.temp<=22?'Templado':'Cálido'))+'</span></div>'
+    +'<div class="big">'+nf(s.temp,1)+'<small>°C</small></div>'
+    +'<div class="facts"><span>Mínima <b class="num">'+s.tmin+'°</b></span><span>Máxima <b class="num">'+s.tmax+'°</b></span><span>Humedad <b class="num">'+s.hum+'%</b></span></div>'
+    +'<p class="plain-say">'+tempPlain(s.temp)+'</p></article>';
+  out+='<article class="card"><div class="ch"><h3>Precipitación</h3><span class="pill '+rn.cls+'">'+rn.txt+'</span></div>'
+    +'<div class="big">'+nf(s.rain7[6],1)+'<small>mm en 24 h</small></div>'
+    +'<p class="plain-say">'+rn.plain+'</p>'
+    +rainChart(s.rain7)
+    +'<div class="facts"><span>Acumulado de 7 días <b class="num">'+nf(total,1)+' mm</b></span></div></article>';
+  out+='<article class="card"><div class="ch"><h3>Caudal del río</h3><span class="pill '+fl.cls+'">'+fl.txt+'</span></div>'
+    +'<div class="big">'+nf(s.flow,1)+'<small>m³/s</small></div>'
+    +'<p class="plain-say">'+fl.plain+'</p>'
+    +'<div class="gauge" role="img" aria-label="Caudal actual '+nf(s.flow,1)+' metros cúbicos por segundo; rango normal de '+nf(s.range[0],1)+' a '+nf(s.range[1],1)+'"><div class="gtrack"><div class="gband" style="left:'+pos(s.range[0])+'%;width:'+(pos(s.range[1])-pos(s.range[0]))+'%"></div><div class="gmark" style="left:'+pos(s.flow)+'%"></div></div>'
+    +'<div class="gscale"><span class="l">0</span><span style="left:'+pos(s.range[0])+'%">'+nf(s.range[0],1)+'</span><span style="left:'+pos(s.range[1])+'%">'+nf(s.range[1],1)+'</span></div></div>'
+    +'<div class="legend"><span><i style="background:var(--ok-bg);border:1px solid var(--ok)"></i>Rango normal</span><span><i style="background:var(--ink)"></i>Hoy</span></div>'
+    +flowChart(s.flow7,s.range)+'</article>';
+  out+='<article class="card"><div class="ch"><h3>Calidad del agua</h3><span class="pill '+wt.cls+'">'+wt.txt+'</span></div>'
+    +'<p class="plain-say">'+cap(wt.phrase)+'. Medimos mercurio y otros metales pesados.</p>'
+    +'<ul class="metals">'+Object.keys(LIMITS).map(function(k){
+        var L=LIMITS[k],v=s.metals[k],m=metalStatus(k,v);
+        return '<li class="metal"><div class="m-name"><strong>'+L.name+'</strong><span class="sym">'+k+'</span></div>'
+          +'<span class="pill sm '+m.cls+'">'+m.txt+'</span>'
+          +'<div class="m-val" style="grid-column:1/-1">'+nf(v,4)+' <small>mg/L</small></div>'
+          +'<div class="m-bar '+m.cls+'" role="img" aria-label="'+Math.round(m.ratio*100)+'% del límite"><i style="width:'+Math.min(m.ratio,1.4)/1.4*100+'%"></i><b style="left:'+(100/1.4)+'%"></b></div>'
+          +'<div class="m-lim">'+Math.round(m.ratio*100)+'% del límite de referencia ('+nf(L.limit,3)+' mg/L)</div></li>';
+      }).join('')+'</ul>'
+    +'<p class="note">La raya vertical marca el límite de referencia. Datos de ejemplo. Los límites usados son los de la norma de agua potable (Res. 2115 de 2007) y deben validarse con el AMB.</p></article>';
+  return out;
+}
+function summaryHTML(s){
+  var fl=flowStatus(s.flow,s.range), rn=rainStatus(s.rain7[6]), wt=waterStatus(s);
+  var lvl=Math.max(fl.lvl,rn.lvl,wt.lvl), cls=['ok','warn','alert'][lvl], head=['Todo en orden','Atención','Alerta'][lvl];
+  return '<div class="summary '+cls+'"><div class="head"><span class="eyebrow">Resumen de hoy · '+s.name+'</span></div>'
+    +'<h2>'+head+'</h2>'
+    +'<p class="sent">En '+s.name+': '+fl.phrase+', '+wt.phrase+' y '+rn.phrase+'.</p>'
+    +'<ul><li><span>Caudal</span><span class="pill '+fl.cls+'">'+fl.txt+'</span></li>'
+    +'<li><span>Agua</span><span class="pill '+wt.cls+'">'+wt.txt+'</span></li>'
+    +'<li><span>Lluvia</span><span class="pill '+rn.cls+'">'+rn.txt+'</span></li></ul></div>';
+}
+function runs(arr,pred){var out=[],st=null;arr.forEach(function(x,i){if(pred(x)){if(st===null)st=i;}else if(st!==null){out.push([st,i-1]);st=null;}});if(st!==null)out.push([st,arr.length-1]);return out;}
+function lab(i){return dayInfo(i+1).label;}
+function span(r){return r[0]===r[1]?lab(r[0]):lab(r[0])+' al '+lab(r[1]);}
+function buildTips(s){
+  var f=s.forecast,tips=[],sl=function(r){return f.slice(r[0],r[1]+1);};
+  var dry=runs(f,function(x){return x.prob<=30;}).sort(function(a,b){return (b[1]-b[0])-(a[1]-a[0]);})[0];
+  if(dry)tips.push({tag:'Cosecha',cls:'ok',title:'Mejores días para cosechar',text:cap(span(dry))+': poca probabilidad de lluvia (hasta '+Math.max.apply(null,sl(dry).map(function(x){return x.prob;}))+'%). Cosecha temprano y deja secar el producto a la sombra.'});
+  var wet=runs(f,function(x){return x.prob>=70||x.mm>=15;})[0];
+  if(wet)tips.push({tag:'Lluvia',cls:'warn',title:'Adelanta la cosecha',text:'Se esperan lluvias fuertes '+span(wet)+' (hasta '+nf(Math.max.apply(null,sl(wet).map(function(x){return x.mm;})),0)+' mm en un día). Cosecha antes, protege el producto del agua y limpia los canales de drenaje.'});
+  var high=runs(f,function(x){return x.flow>s.range[1];})[0];
+  if(high)tips.push({tag:'Río',cls:'warn',title:'El río puede crecer',text:'El caudal subiría por encima de lo normal '+span(high)+'. Evita trabajar cerca de la orilla y saca los equipos de riego del cauce.'});
+  var low=runs(f,function(x){return x.flow<s.range[0];})[0];
+  if(low)tips.push({tag:'Riego',cls:'warn',title:'Planea el riego',text:'El caudal seguirá bajo '+span(low)+'. Riega en la mañana temprano, evita desperdiciar agua y guarda la que puedas.'});
+  var fr=runs(f,function(x){return x.tmin<=4;})[0];
+  if(fr)tips.push({tag:'Frío',cls:'warn',title:'Cubre los cultivos sensibles',text:'Podría hacer mucho frío '+span(fr)+' (mínima de '+Math.min.apply(null,sl(fr).map(function(x){return x.tmin;}))+'°). Cubre las plantas jóvenes al atardecer.'});
+  var w=waterStatus(s);
+  if(w.lvl===0)tips.push({tag:'Agua',cls:'ok',title:'Agua en buen estado',text:'Las últimas mediciones de metales están por debajo del límite. Puedes regar con normalidad.'});
+  else if(w.lvl===1)tips.push({tag:'Agua',cls:'warn',title:cap(w.name)+' cerca del límite',text:'La última medición está cerca del límite de referencia. Espera la próxima medición antes de regar hortalizas de hoja con esta agua.'});
+  else tips.push({tag:'Agua',cls:'alert',title:cap(w.name)+' sobre el límite',text:'No uses esta agua para regar hasta confirmar una nueva medición.'});
+  return tips;
+}
+function tipsList(items){
+  return '<ul class="tips">'+items.map(function(t){
+    return '<li class="tip"><span class="pill '+t.cls+'" style="justify-self:start">'+t.tag+'</span><div><h4>'+t.title+'</h4><p>'+t.text+'</p></div></li>';
+  }).join('')+'</ul>';
+}
+function forecastTable(s){
+  var rows=s.forecast.map(function(f,i){
+    var d=dayInfo(i+1),fl=flowStatus(f.flow,s.range);
+    return '<div class="frow"><div class="fday"><strong>'+d.wd+'</strong><span>'+d.n+'</span></div>'
+      +'<svg class="glyph" aria-hidden="true"><use href="#g-'+f.sky+'"/></svg>'
+      +'<div class="ftemp">'+f.tmin+'° <span>/</span> '+f.tmax+'°</div>'
+      +'<div class="frain"><div class="meter" aria-hidden="true"><i style="width:'+f.prob+'%"></i></div><span>'+f.prob+'% · '+nf(f.mm,f.mm%1?1:0)+' mm</span></div>'
+      +'<div class="fflow"><b>'+nf(f.flow,1)+' m³/s</b><span class="pill sm '+fl.cls+'">'+fl.txt+'</span></div></div>';
+  }).join('');
+  return '<div class="pblock"><h3>Predicción por día · '+s.name+'</h3><p class="sub">Temperatura mínima y máxima, probabilidad de lluvia y caudal esperado del río.</p>'
+    +'<div class="frows"><div class="fhead"><span>Día</span><span></span><span>Temperatura</span><span>Probabilidad de lluvia</span><span>Caudal esperado</span></div>'+rows+'</div></div>';
+}
+function capStatus(m){
+  if(m<=0)return {lvl:2,cls:'alert',txt:'No captar'};
+  if(m<0.3)return {lvl:1,cls:'warn',txt:'Captar con cuidado'};
+  return {lvl:0,cls:'ok',txt:'Se puede captar'};
+}
+function captacionHTML(s){
+  var m=s.flow-s.eco,cs=capStatus(m),wt=waterStatus(s);
+  var lvl=Math.max(cs.lvl,wt.lvl),cls=['ok','warn','alert'][lvl];
+  var head=['Hoy se puede captar','Captar con cuidado','Hoy no se recomienda captar'][lvl];
+  var why=[m<=0?'el caudal no supera el caudal ecológico ('+nf(s.eco,1)+' m³/s)':'queda un margen de '+nf(m,1)+' m³/s sobre el caudal ecológico ('+nf(s.eco,1)+' m³/s)'];
+  if(wt.lvl>0)why.push(wt.phrase);
+  var rows=s.forecast.map(function(f,i){
+    var d=dayInfo(i+1),mg=f.flow-s.eco,st=capStatus(mg);
+    return '<div class="crow"><div class="cday fday"><strong>'+d.wd+'</strong><span>'+d.n+'</span></div>'
+      +'<div class="c cq"><small>Caudal esperado</small><b>'+nf(f.flow,1)+' m³/s</b></div>'
+      +'<div class="c ce"><small>Caudal ecológico</small>'+nf(s.eco,1)+' m³/s</div>'
+      +'<div class="c cm"><small>Margen</small><b>'+nf(Math.max(0,mg),1)+' m³/s</b></div>'
+      +'<div class="cst"><span class="pill sm '+st.cls+'">'+st.txt+'</span></div></div>';
+  }).join('');
+  return '<div class="pblock"><h3>Captación posible sin afectar el río · '+s.name+'</h3><p class="sub">Agua que queda disponible después de dejar en el río el caudal ecológico.</p>'
+    +'<div class="callout '+cls+'"><div><h4>'+head+'</h4><p>'+cap(why.join(' y '))+'.</p></div><div class="m">'+nf(Math.max(0,m),1)+'<small>m³/s de margen hoy</small></div></div>'
+    +'<div class="frows"><div class="chead"><span>Día</span><span>Caudal esperado</span><span>Caudal ecológico</span><span>Margen</span><span></span></div>'+rows+'</div>'
+    +'<p class="note">El caudal ecológico es el mínimo que debe quedar en el río. El valor es de ejemplo: lo define la autoridad ambiental. El margen es el caudal esperado menos el caudal ecológico.</p></div>';
+}
+function buildAlerts(s){
+  var f=s.forecast,al=[];
+  var nocap=runs(f,function(x){return x.flow-s.eco<=0;})[0];
+  if(nocap)al.push({tag:'Captación',cls:'alert',title:'Sin margen para captar: '+span(nocap),text:'El caudal esperado no supera el caudal ecológico. Suspende o reduce la captación esos días para no afectar el río.'});
+  var low=runs(f,function(x){return x.flow<s.range[0];})[0];
+  if(low)al.push({tag:'Caudal',cls:'warn',title:'Caudal bajo: '+span(low),text:'El río quedaría por debajo de su rango normal ('+nf(s.range[0],1)+' m³/s). Revisa el plan de captación y reduce el volumen si el margen baja.'});
+  var high=runs(f,function(x){return x.flow>s.range[1];})[0];
+  if(high)al.push({tag:'Crecida',cls:'warn',title:'Posible crecida: '+span(high),text:'Se espera más agua de lo normal por las lluvias fuertes. Puede haber turbiedad y arrastre de sedimentos; revisa la infraestructura de captación.'});
+  var w=waterStatus(s);
+  if(w.lvl>0){var r=Math.round(metalStatus(w.key,s.metals[w.key]).ratio*100);al.push({tag:'Agua',cls:w.cls,title:cap(w.name)+(w.lvl===1?' cerca del límite':' sobre el límite'),text:'La última medición está en '+r+'% del límite de referencia ('+nf(s.metals[w.key],4)+' mg/L). Programa un muestreo de verificación.'});}
+  if(!al.length)al.push({tag:'Todo bien',cls:'ok',title:'Sin alertas en los próximos 7 días',text:'El caudal se mantiene dentro de su rango y la calidad del agua está por debajo de los límites.'});
+  return al;
+}
+function reportHTML(){
+  return '<div class="pblock report"><div><h3>Informes especializados</h3><p class="sub" style="margin:0">Análisis del caudal, la calidad del agua y la captación en el tiempo, preparado para tu entidad.</p>'
+    +'<ul><li>Resumen mensual de caudal y lluvia</li><li>Tendencia de mercurio y metales pesados</li><li>Días con margen para captar</li></ul></div>'
+    +'<button type="button" class="btn btn-primary" data-action="request-report">Solicitar informe de ejemplo</button></div>';
+}
+function premiumHTML(s){
+  if(state.role==='entidad'){
+    return captacionHTML(s)
+      +'<div class="pblock"><h3>Alertas para tu entidad</h3><p class="sub">Avisos de caudal, crecidas y calidad del agua en '+s.name+'.</p>'+tipsList(buildAlerts(s))+'</div>'
+      +forecastTable(s)+reportHTML();
+  }
+  return forecastTable(s)
+    +'<div class="pblock"><h3>Consejos para tu cosecha</h3><p class="sub">Según la predicción y el estado del agua en '+s.name+'.</p>'+tipsList(buildTips(s))+'</div>';
+}
+
+/* ---------- render ---------- */
+function isPrem(){return state.plan==='trial'||state.plan==='premium';}
+function isEnt(){return state.role==='entidad';}
+function planName(){return isEnt()?'Entidades':'Premium';}
+function payOrContact(){if(isEnt())openOverlay('#contact','#c-org');else openOverlay('#pay','#m1');}
+function upgradeLabel(){
+  if(state.plan==='visitor')return 'Crear cuenta y probar 30 días gratis';
+  if(state.plan==='free'&&!state.trialUsed)return 'Empezar prueba de 30 días gratis';
+  return isEnt()?'Solicitar propuesta':'Activar Premium por $8.000 al mes';
+}
+function renderDemo(){
+  document.querySelectorAll('#demo-opts button').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-plan')===state.plan));});
+  document.querySelectorAll('#demo-role button').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-role')===state.role));});
+}
+function renderAcct(){
+  var h='',ent=isEnt();
+  if(state.plan==='visitor'){
+    h='<button type="button" class="btn btn-ghost btn-sm" data-action="open-login">Ingresar</button><button type="button" class="btn btn-primary btn-sm" data-action="open-signup">Crear cuenta</button>';
+  }else{
+    var tag={free:'<span class="pill info plain">Plan gratuito</span>',
+      trial:'<span class="pill prem">'+(ent?'Entidades · prueba '+state.daysLeft+' días':'Premium · '+state.daysLeft+' días')+'</span>',
+      expired:'<span class="pill warn plain">Prueba vencida</span>',
+      premium:'<span class="pill prem">'+planName()+'</span>'}[state.plan];
+    h=tag+'<button type="button" class="btn btn-ghost btn-sm" data-action="logout">Salir</button>';
+  }
+  $('#acct').innerHTML=h;
+}
+function renderBanner(){
+  var b=$('#banner'),p=state.plan,ent=isEnt();
+  b.className='banner';
+  if(p==='trial'){
+    b.innerHTML='<div class="inner"><p><strong>'+(ent?'Prueba activa':'Prueba Premium activa')+': te quedan '+state.daysLeft+' días.</strong> '+(ent?'Después acordamos un plan a la medida para tu organización.':'Después cuesta $8.000 al mes.')+'</p><div class="acts"><button type="button" class="btn btn-primary btn-sm" data-action="open-pay">'+(ent?'Solicitar propuesta':'Continuar con Premium')+'</button></div></div>';
+    b.hidden=false;
+  }else if(p==='expired'){
+    b.className='banner expired';
+    b.innerHTML='<div class="inner"><p><strong>Tu prueba terminó.</strong> '+(ent?'Pide una propuesta a la medida o quédate con el plan gratuito y verás anuncios.':'Sigue con Premium por $8.000 al mes o quédate con el plan gratuito y verás anuncios.')+'</p><div class="acts"><button type="button" class="btn btn-primary btn-sm" data-action="open-pay">'+(ent?'Solicitar propuesta':'Continuar por $8.000 al mes')+'</button><button type="button" class="btn btn-ghost btn-sm" data-action="stay-free">Seguir gratis</button></div></div>';
+    b.hidden=false;
+  }else if(p==='premium'){
+    b.innerHTML='<div class="inner"><p>'+(ent?'<strong>Plan Entidades activo.</strong> Captación, alertas de caudal, informes especializados y sin anuncios.':'<strong>Premium activo.</strong> $8.000 al mes, sin anuncios y con predicciones a 7 días.')+'</p></div>';
+    b.hidden=false;
+  }else{b.hidden=true;b.innerHTML='';}
+}
+function renderHero(){
+  var p=state.plan,ent=isEnt();
+  $('#hero-eyebrow').textContent=p==='visitor'?'Cuenca del río Tona · Santander':(state.name?'Hola, '+state.name+' · Cuenca del río Tona':'Hola de nuevo · Cuenca del río Tona');
+  $('#hero-lead').textContent=ent?'Caudal, calidad del agua y captación posible sin afectar el río, para entidades y empresas.':'Clima, lluvia, caudal y calidad del agua de la cuenca, explicados en palabras sencillas.';
+  var cta='';
+  if(p==='visitor')cta='<button type="button" class="btn btn-primary" data-action="open-signup">Crear cuenta gratis</button><button type="button" class="btn btn-ghost" data-action="goto" data-target="planes">Ver planes</button>';
+  else if(isPrem())cta='<button type="button" class="btn btn-primary" data-action="goto" data-target="premium">'+(ent?'Ver captación y alertas':'Ver predicciones')+'</button><button type="button" class="btn btn-ghost" data-action="goto" data-target="datos">Datos de hoy</button>';
+  else cta='<button type="button" class="btn btn-primary" data-action="upgrade">'+upgradeLabel()+'</button><button type="button" class="btn btn-ghost" data-action="goto" data-target="planes">Ver planes</button>';
+  $('#hero-cta').innerHTML=cta;
+}
+function renderData(){
+  var s=STATIONS[state.station];
+  $('#summary').innerHTML=summaryHTML(s);
+  $('#cards').innerHTML=cardsHTML(s);
+  var d=cap(today.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
+  $('#datos-meta').textContent=d+' · '+s.desc+' · Última medición hace 15 minutos (datos de ejemplo)';
+  $('#tabs').innerHTML=Object.keys(STATIONS).map(function(k){
+    return '<button type="button" role="tab" data-action="station" data-k="'+k+'" aria-selected="'+(k===state.station)+'">'+STATIONS[k].name+'</button>';
+  }).join('');
+}
+function renderPremium(){
+  var s=STATIONS[state.station],locked=!isPrem(),ent=isEnt(),c=$('#prem-content'),lk=$('#prem-lock');
+  $('#prem-pill').textContent=planName();
+  $('#prem-h').textContent=ent?'Captación, alertas y pronóstico de los próximos 7 días':'Lo que viene en los próximos 7 días';
+  $('#prem-sub').textContent=ent?'Cuánta agua se puede captar sin afectar el río, alertas de caudal y de calidad del agua, e informes especializados.':'Predicción de clima, lluvia y caudal, con consejos para decidir cuándo cosechar y regar.';
+  var rb=$('#rolebar');rb.hidden=state.plan!=='visitor';
+  rb.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-role')===state.role));});
+  c.innerHTML=premiumHTML(s);
+  c.classList.toggle('blurred',locked);
+  c.inert=locked;
+  c.setAttribute('aria-hidden',String(locked));
+  lk.hidden=!locked;
+  if(locked){
+    var title,txt,btn2='';
+    if(state.plan==='visitor'){
+      title='Prueba gratis por 30 días';
+      txt=ent?'Crea tu cuenta como entidad o empresa y activa la prueba. Verás cuánta agua se puede captar sin afectar el río y las alertas de caudal.':'Crea tu cuenta y activa la prueba. Verás la predicción de clima y lluvia de los próximos días y consejos para tu cosecha.';
+      btn2='<button type="button" class="btn btn-ghost" data-action="open-login">Ya tengo cuenta</button>';
+    }else if(state.plan==='free'&&!state.trialUsed){
+      title='Activa tus 30 días gratis';
+      txt=ent?'Pruébalo sin costo. Después acordamos un plan a la medida, y si no sigues, vuelves al plan gratuito.':'Pruébalo sin pagar. Después cuesta $8.000 al mes, y si no sigues, vuelves al plan gratuito.';
+    }else if(state.plan==='expired'){
+      title='Tu prueba terminó';
+      txt=ent?'Pide una propuesta a la medida para seguir con la captación, las alertas y los informes.':'Sigue viendo la predicción y los consejos de cosecha por $8.000 al mes.';
+    }else{
+      title=ent?'Captación y alertas para tu entidad':'Premium: predicciones y consejos';
+      txt=ent?'Consulta cuánta agua se puede captar sin afectar el río y recibe alertas de caudal y calidad del agua. Plan a la medida y sin anuncios.':'Planea tu cosecha y tu riego con la predicción de los próximos 7 días. $8.000 al mes y sin anuncios.';
+    }
+    lk.innerHTML='<div class="lockcard"><svg aria-hidden="true"><use href="#g-lock"/></svg><h3>'+title+'</h3><p>'+txt+'</p><div class="cta"><button type="button" class="btn btn-primary" data-action="upgrade">'+upgradeLabel()+'</button>'+btn2+'</div></div>';
+  }
+}
+function li(t,off){return '<li'+(off?' class="off"':'')+'><svg aria-hidden="true"><use href="#g-'+(off?'x':'check')+'"/></svg><span>'+t+'</span></li>';}
+function renderPlans(){
+  var p=state.plan,ent=isEnt(),vis=p==='visitor';
+  var offA=vis?['Predicción a 7 días','Consejos de cosecha, captación y alertas']:(ent?['Predicción a 7 días','Captación y alertas de caudal']:['Predicción de clima y lluvia','Consejos de cosecha']);
+  var freeBtn;
+  if(vis)freeBtn='<button type="button" class="btn btn-ghost wide" data-action="open-signup-free">Crear cuenta gratis</button>';
+  else if(p==='free'||p==='expired')freeBtn='<button type="button" class="btn btn-ghost wide" disabled>'+(p==='free'?'Tu plan actual':'Plan al que vuelves')+'</button>';
+  else freeBtn='<button type="button" class="btn btn-ghost wide" disabled>Incluido en tu plan</button>';
+  function btnFor(role){
+    var e=role==='entidad';
+    if(vis)return '<button type="button" class="btn btn-primary wide" data-action="signup-role" data-role="'+role+'">Crear cuenta y probar 30 días gratis</button>';
+    if(p==='trial')return '<button type="button" class="btn btn-primary wide" data-action="open-pay">'+(e?'Solicitar propuesta':'Continuar con Premium')+'</button>';
+    if(p==='premium')return '<button type="button" class="btn btn-primary wide" disabled>Tu plan actual</button>';
+    if(p==='free'&&!state.trialUsed)return '<button type="button" class="btn btn-primary wide" data-action="upgrade">Empezar prueba de 30 días gratis</button>';
+    return '<button type="button" class="btn btn-primary wide" data-action="upgrade">'+(e?'Solicitar propuesta':'Activar Premium por $8.000 al mes')+'</button>';
+  }
+  function noteFor(e){
+    if(p==='trial')return 'Prueba activa: te quedan '+state.daysLeft+' días.';
+    if(p==='premium')return e?'Plan activo.':'Se cobran $8.000 cada mes.';
+    return e?'Después de la prueba acordamos un plan según lo que necesite tu organización. Si no continúas, sigues con el plan gratuito y verás anuncios.':'Después de la prueba cuesta $8.000 al mes. Si no continúas, sigues con el plan gratuito y verás anuncios.';
+  }
+  var free='<article class="plan"><div><h3>Gratis</h3><p class="sub">Para estar al tanto del río todos los días.</p></div>'
+    +'<div class="price">$0<small> / siempre</small></div><ul>'
+    +li('Temperatura y clima de hoy')+li('Precipitación de los últimos 7 días')+li('Caudal del río y su rango normal')+li('Calidad del agua: mercurio y metales pesados')+li('Pequeños anuncios en las esquinas')+li(offA[0],true)+li(offA[1],true)
+    +'</ul>'+freeBtn+'</article>';
+  var agri='<article class="plan feat"><div><h3>Premium</h3><p class="sub">Para agricultores: planear la cosecha y el riego con anticipación.</p></div>'
+    +'<div class="price">$8.000<small> COP / mes</small></div><span class="pill info plain" style="align-self:flex-start">Primeros 30 días gratis</span><ul>'
+    +li('Todo lo del plan gratuito')+li('Predicción de clima y lluvia para los próximos 7 días')+li('Caudal esperado del río')+li('Consejos de cosecha según el clima y el agua')+li('Sin anuncios')
+    +'</ul>'+btnFor('agri')+'<p class="fine">'+noteFor(false)+'</p></article>';
+  var entc='<article class="plan feat"><div><h3>Entidades y empresas</h3><p class="sub">Para quienes captan, vigilan o gestionan el agua de la cuenca.</p></div>'
+    +'<div class="price">A la medida</div><span class="pill info plain" style="align-self:flex-start">Primeros 30 días gratis</span><ul>'
+    +li('Todo lo del plan gratuito')+li('Captación posible sin afectar el río, según el caudal ecológico')+li('Alertas de caudal, crecidas y calidad del agua')+li('Predicción de clima, lluvia y caudal a 7 días')+li('Informes especializados y análisis de datos')+li('Sin anuncios')
+    +'</ul>'+btnFor('entidad')+'<p class="fine">'+noteFor(true)+'</p></article>';
+  var el=$('#plans');
+  el.className='plans'+(vis?' three':'');
+  el.innerHTML=(vis?[free,agri,entc]:[free,ent?entc:agri]).join('');
+}
+function renderAds(){
+  var show=!isPrem();
+  $('#ad-l').hidden=!show;$('#ad-r').hidden=!show;
+  document.body.classList.toggle('has-ads',show);
+}
+function render(){renderDemo();renderAcct();renderBanner();renderHero();renderData();renderPremium();renderPlans();renderAds();}
+
+/* ---------- interacción ---------- */
+function toast(msg){
+  var t=$('#toast');t.textContent=msg;t.hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true;},4000);
+}
+function openOverlay(id,focusSel){
+  lastFocus=document.activeElement;
+  $(id).hidden=false;document.body.style.overflow='hidden';
+  var f=$(focusSel);if(f)setTimeout(function(){f.focus();},30);
+}
+function closeOverlays(){
+  ['#auth','#pay','#contact'].forEach(function(id){$(id).hidden=true;});
+  document.body.style.overflow='';
+  if(lastFocus&&lastFocus.focus){try{lastFocus.focus();}catch(e){}}
+}
+function syncRoleText(){
+  var ent=$('#f-role').value==='entidad';
+  $('#f-trial-strong').textContent=ent?'Quiero 30 días de prueba gratis':'Quiero 30 días de Premium gratis';
+  $('#f-trial-small').textContent=ent?'Captación posible sin afectar el río, alertas de caudal y calidad del agua, predicción a 7 días y sin anuncios. Después acordamos un plan a la medida.':'Predicciones de clima y lluvia, consejos de cosecha y sin anuncios. Después cuesta $8.000 al mes.';
+}
+function openAuth(mode,wantTrial){
+  authMode=mode;
+  var su=mode==='signup';
+  $('#auth-title').textContent=su?'Crea tu cuenta gratis':'Ingresa a tu cuenta';
+  $('#auth-sub').textContent=su?'Te toma un minuto. Puedes activar 30 días de Premium sin pagar.':'Escribe tus datos para continuar.';
+  $('#auth-submit').textContent=su?(wantTrial?'Crear cuenta y empezar la prueba':'Crear cuenta'):'Ingresar';
+  $('#auth-switch-text').textContent=su?'¿Ya tienes cuenta?':'¿Aún no tienes cuenta?';
+  $('#auth-switch').textContent=su?'Ingresar':'Crear cuenta';
+  document.querySelectorAll('[data-signup]').forEach(function(e){e.hidden=!su;});
+  $('#f-trial').checked=wantTrial!==false;
+  $('#f-role').value=state.role;
+  syncRoleText();
+  $('#auth-err').hidden=true;
+  openOverlay('#auth',su?'#f-name':'#f-user');
+}
+function startTrial(){
+  state.plan='trial';state.daysLeft=30;state.trialUsed=true;render();
+  toast('Prueba Premium activada: 30 días gratis.');
+  var el=$('#premium');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function upgrade(){
+  if(state.plan==='visitor')return openAuth('signup',true);
+  if(state.plan==='free'&&!state.trialUsed)return startTrial();
+  if(state.plan==='free'||state.plan==='expired')return payOrContact();
+}
+function setPlan(p){
+  state.plan=p;
+  if(p==='visitor'){state.name='';state.trialUsed=false;}
+  if(p==='free'){state.trialUsed=false;}
+  if(p==='trial'){state.daysLeft=23;state.trialUsed=true;}
+  if(p==='expired'||p==='premium'){state.trialUsed=true;}
+  render();
+}
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-action]');
+  if(!t){
+    if(e.target.classList&&e.target.classList.contains('overlay'))closeOverlays();
+    return;
+  }
+  var a=t.getAttribute('data-action');
+  switch(a){
+    case 'open-signup':openAuth('signup',true);break;
+    case 'open-signup-free':openAuth('signup',false);break;
+    case 'open-login':openAuth('login');break;
+    case 'switch-auth':openAuth(authMode==='signup'?'login':'signup',true);break;
+    case 'logout':setPlan('visitor');toast('Cerraste la sesión.');break;
+    case 'upgrade':upgrade();break;
+    case 'open-pay':payOrContact();break;
+    case 'confirm-pay':closeOverlays();state.plan='premium';state.trialUsed=true;render();toast('Premium activo. Gracias por apoyar Tona Alerta.');break;
+    case 'stay-free':state.plan='free';render();toast('Sigues con el plan gratuito. Verás anuncios en las esquinas.');break;
+    case 'close':closeOverlays();break;
+    case 'station':state.station=t.getAttribute('data-k');renderData();renderPremium();break;
+    case 'set-plan':setPlan(t.getAttribute('data-plan'));break;
+    case 'set-role':state.role=t.getAttribute('data-role');render();break;
+    case 'signup-role':state.role=t.getAttribute('data-role');render();openAuth('signup',true);break;
+    case 'request-report':toast('Solicitud de informe registrada (simulado).');break;
+    case 'goto':var el=document.getElementById(t.getAttribute('data-target'));if(el)el.scrollIntoView({behavior:'smooth',block:'start'});break;
+  }
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeOverlays();});
+
+$('#auth-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  var err=$('#auth-err');
+  function fail(m){err.textContent=m;err.hidden=false;}
+  var name=$('#f-name').value.trim(),user=$('#f-user').value.trim(),pass=$('#f-pass').value;
+  if(authMode==='signup'&&!name)return fail('Escribe tu nombre.');
+  if(!user)return fail('Escribe tu correo o tu número de celular.');
+  if(pass.length<6)return fail('La contraseña debe tener al menos 6 caracteres.');
+  var wantTrial=$('#f-trial').checked,role=$('#f-role').value;
+  closeOverlays();
+  this.reset();
+  if(authMode==='signup'){
+    state.name=name.split(/\s+/)[0];
+    state.role=role;
+    if(wantTrial){state.plan='trial';state.daysLeft=30;state.trialUsed=true;render();toast(role==='entidad'?'Cuenta creada. Tienes 30 días de prueba gratis.':'Cuenta creada. Tienes 30 días de Premium gratis.');}
+    else{state.plan='free';state.trialUsed=false;render();toast('Cuenta creada. Estás en el plan gratuito.');}
+  }else{
+    state.name='';state.plan='free';state.trialUsed=false;render();toast('Bienvenido de nuevo.');
+  }
+});
+
+$('#f-role').addEventListener('change',syncRoleText);
+$('#contact-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  var err=$('#contact-err');
+  if(!$('#c-org').value.trim()){err.textContent='Escribe el nombre de tu organización.';err.hidden=false;return;}
+  err.hidden=true;
+  closeOverlays();
+  this.reset();
+  toast('Solicitud enviada. El equipo de Tona Alerta te presentará una propuesta (simulado).');
+});
+
+render();
+})();
+</script>
+
+</body>
+</html>
